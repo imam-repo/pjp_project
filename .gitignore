@@ -1,0 +1,22 @@
+# IDEs and Editors
+.idea/
+.vscode/
+
+# Python-specific 
+__pycache__/
+*.py[cod]
+*.so
+
+# Package management
+/venv/
+/env/
+Pipfile.lock 
+
+# Data files (adjust if you want to keep these in version control) 
+*.sqlite3 
+
+# Logs 
+log.txt
+
+# Other
+.DS_Store  # For macOS users
