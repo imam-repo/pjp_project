@@ -6,6 +6,7 @@
 __pycache__/
 *.py[cod]
 *.so
+__pycache__
 
 # Package management
 /venv/
