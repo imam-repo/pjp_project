@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from k_means_constrained import KMeansConstrained
 from models import DataPoint, ClusteringRequest, ClusterData
 from logging_config import logger
@@ -9,6 +10,13 @@ import random
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
+)
 app.add_middleware(LoggingMiddleware)
 
 def generate_colors(n_clusters):
@@ -66,11 +74,11 @@ async def perform_kmeans(request: ClusteringRequest):
     } 
 
 @app.get("/sample_output")
-def get_sample_output():
+async def get_sample_output():
     with open("sample_10k.json", "r") as f:
         return json.load(f)
 
 @app.get("/")
-def root():
+async def root():
     return {'message':"Welcome"}
 
