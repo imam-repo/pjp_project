@@ -21,9 +21,13 @@ class DataPoint(BaseModel):
             raise ValueError('Longitude must be between -180 and 180')
         return v
 
-class ClusteringRequest(BaseModel):
+class ClusteringRequestClusters(BaseModel):
     data: list[DataPoint]
     n_clusters: PositiveInt
+
+class ClusteringRequestOutlets(BaseModel):
+    data: list[DataPoint]
+    n_outlets: PositiveInt
 
 class ClusterData(BaseModel):  
     id_outlet: int
