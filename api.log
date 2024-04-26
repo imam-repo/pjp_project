@@ -1,8 +1,0 @@
-2024-04-26 14:15:05,041 - middleware - INFO - / - GET - 200 - processed in 796 microseconds
-2024-04-26 14:15:09,815 - middleware - INFO - /docs - GET - 200 - processed in 622 microseconds
-2024-04-26 14:15:10,189 - middleware - INFO - /openapi.json - GET - 200 - processed in 4232 microseconds
-2024-04-26 14:15:55,999 - middleware - ERROR - Invalid URL: http://localhost:8000/cluster/outlets - Error: list indices must be integers or slices, not str
-2024-04-26 14:15:56,000 - middleware - ERROR - /cluster/outlets - POST - 404 - processed in 827837 microseconds
-2024-04-26 14:16:39,327 - middleware - INFO - /cluster/clusters - POST - 200 - processed in 68994 microseconds
-2024-04-26 14:33:11,168 - middleware - INFO - /cluster/outlets - POST - 200 - processed in 817795 microseconds
-2024-04-26 14:39:10,095 - middleware - INFO - /cluster/outlets - POST - 200 - processed in 920252 microseconds
