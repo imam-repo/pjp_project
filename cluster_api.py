@@ -40,11 +40,44 @@ def perform_clustering(X, total_data, n_clusters, size_min, size_max):
             n_jobs=-1
         )
         labels = clf.fit_predict(X)
-        return labels 
+        return labels , clf
 
     except Exception as e:  
         logger.error("Clustering failed:", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Clustering failed: {str(e)}")
+
+def build_clustering_response(labels, colors, data, clf):
+    response = {
+        "data": [],
+        "cluster_definitions": []
+    }
+
+    cluster_defs = {}
+    for i, label in enumerate(labels):
+        color = colors[label.item()]
+        center = clf.cluster_centers_[label.item()].tolist()
+
+        cluster_id = label.item()
+        if cluster_id not in cluster_defs:
+            cluster_defs[cluster_id] = {
+                "cluster": cluster_id,
+                "color": color,
+                "center": center
+            }
+
+        response["data"].append({
+            "id_outlet": data[i].id_outlet,
+            "latitude": data[i].latitude,
+            "longitude": data[i].longitude,
+            "cluster": label.item(),
+            "color": color
+        })
+
+    response["cluster_definitions"] = list(cluster_defs.values())
+    return {
+        "status": "success",
+        "data": response 
+    } 
 
 @app.post("/cluster/clusters")
 async def perform_kmeans_by_clusters(request: ClusteringRequestClusters):
@@ -59,25 +92,11 @@ async def perform_kmeans_by_clusters(request: ClusteringRequestClusters):
     size_min = total_data // request.n_clusters
     size_max = total_data
 
-    labels = perform_clustering(X, total_data, request.n_clusters, size_min, size_max)
+    labels, clf = perform_clustering(X, total_data, request.n_clusters, size_min, size_max)
     colors = generate_colors(request.n_clusters)
 
-    response = []
-    for i, label in enumerate(labels):
-        
-        color = colors[label.item()]
-        response.append(ClusterData(
-            id_outlet=request.data[i].id_outlet,
-            latitude=request.data[i].latitude,
-            longitude=request.data[i].longitude,
-            cluster=label.item() ,
-            color=color
-        ))
-
-    return {
-        "status": "success",
-        "data": response 
-    } 
+    response = build_clustering_response(labels, colors, request.data, clf)
+    return response
 
 @app.post("/cluster/outlets")
 async def perform_kmeans_by_outlets(request: ClusteringRequestOutlets):
@@ -93,25 +112,11 @@ async def perform_kmeans_by_outlets(request: ClusteringRequestOutlets):
     size_max = total_data
     n_clusters = math.ceil(total_data / request.n_outlets)
 
-    labels = perform_clustering(X, total_data, n_clusters, size_min, size_max)
+    labels, clf = perform_clustering(X, total_data, n_clusters, size_min, size_max)
     colors = generate_colors(n_clusters)
 
-    response = []
-    for i, label in enumerate(labels):
-        
-        color = colors[label.item()]
-        response.append(ClusterData(
-            id_outlet=request.data[i].id_outlet,
-            latitude=request.data[i].latitude,
-            longitude=request.data[i].longitude,
-            cluster=label.item() ,
-            color=color
-        ))
-
-    return {
-        "status": "success",
-        "data": response 
-    } 
+    response = build_clustering_response(labels, colors, request.data, clf)
+    return response 
 
 @app.get("/sample_output")
 async def get_sample_output():
