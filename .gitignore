@@ -21,3 +21,5 @@ log.txt
 
 # Other
 .DS_Store  # For macOS users
+
+api.log
