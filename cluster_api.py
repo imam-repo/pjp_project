@@ -82,7 +82,7 @@ def build_clustering_response(labels, colors, data, clf):
 @app.post("/cluster/clusters")
 async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
     """
-    Performs K-Means clustering based on the specified number of clusters.
+    Performs clustering based on the specified number of clusters.
 
     **Parameters:**
 
@@ -153,7 +153,7 @@ async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
 @app.post("/cluster/outlets")
 async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
     """
-    Performs K-Means clustering based on the specified number of outlets.
+    Performs clustering based on the specified number of outlets.
 
     **Parameters:**
 
