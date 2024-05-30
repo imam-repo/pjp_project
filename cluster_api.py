@@ -80,7 +80,59 @@ def build_clustering_response(labels, colors, data, clf):
     } 
 
 @app.post("/cluster/clusters")
-async def perform_kmeans_by_clusters(request: ClusteringRequestClusters):
+async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
+    """
+    Performs K-Means clustering based on the specified number of clusters.
+
+    **Parameters:**
+
+    * **request (ClusteringRequestClusters):**  The input request containing:
+        * **data (list[DataPoint]):**  A list of data points with the following fields:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+        * **n_clusters (int):**  The desired number of clusters.
+
+    **Returns:**
+
+    * **dict:**  A dictionary containing the clustering results:
+        * **data (list):**  A list of data points with their assigned cluster information:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+            * **cluster (int):**  The cluster ID assigned to the data point.
+            * **color (str):**  A color representing the cluster.
+        * **cluster_definitions (list):** A list of cluster definitions:
+            * **cluster (int):**  The cluster ID.
+            * **color (str):**  A color representing the cluster.
+            * **center (list):** The coordinates of the cluster's center.
+    
+    **Example Response:**
+
+    ```json
+    {
+        "data": [
+            {
+                "id_outlet": 123,
+                "latitude": -6.2345,
+                "longitude": 106.876,
+                "cluster": 0,
+                "color": "#FF0000"
+            },
+            # ... more data points ... 
+        ],
+        "cluster_definitions": [
+            {
+                "cluster": 0,
+                "color": "#FF0000",
+                "center": [ -6.21, 106.85 ]
+            },
+            # ... more cluster definitions ...
+        ]
+    }
+    ```
+    """
+
     # Input Validation
     if len(request.data) == 0:
         raise HTTPException(status_code=400, detail="No data points provided")
@@ -99,7 +151,58 @@ async def perform_kmeans_by_clusters(request: ClusteringRequestClusters):
     return response
 
 @app.post("/cluster/outlets")
-async def perform_kmeans_by_outlets(request: ClusteringRequestOutlets):
+async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
+    """
+    Performs K-Means clustering based on the specified number of outlets.
+
+    **Parameters:**
+
+    * **request (ClusteringRequestOutlets):**  The input request containing:
+        * **data (list[DataPoint]):**  A list of data points with the following fields:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+        * **n_outlets (int):**  The desired number of outlet.
+
+    **Returns:**
+
+    * **dict:**  A dictionary containing the clustering results:
+        * **data (list):**  A list of data points with their assigned cluster information:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+            * **cluster (int):**  The cluster ID assigned to the data point.
+            * **color (str):**  A color representing the cluster.
+        * **cluster_definitions (list):** A list of cluster definitions:
+            * **cluster (int):**  The cluster ID.
+            * **color (str):**  A color representing the cluster.
+            * **center (list):** The coordinates of the cluster's center.
+    
+    **Example Response:**
+
+    ```json
+    {
+        "data": [
+            {
+                "id_outlet": 123,
+                "latitude": -6.2345,
+                "longitude": 106.876,
+                "cluster": 0,
+                "color": "#FF0000"
+            },
+            # ... more data points ... 
+        ],
+        "cluster_definitions": [
+            {
+                "cluster": 0,
+                "color": "#FF0000",
+                "center": [ -6.21, 106.85 ]
+            },
+            # ... more cluster definitions ...
+        ]
+    }
+    ```
+    """
     # Input Validation
     if len(request.data) == 0:
         raise HTTPException(status_code=400, detail="No data points provided")
