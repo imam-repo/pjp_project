@@ -1,13 +1,17 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from k_means_constrained import KMeansConstrained
-from models import DataPoint, ClusteringRequestClusters, ClusteringRequestOutlets, ClusterData
+from models import DataPoint, ClusteringRequestClusters, ClusteringRequestOutlets, ClusterData, ClusteringRequestWorkingHours, ClusteringResponseWorkingHours
 from logging_config import logger
 from middleware import LoggingMiddleware
+from clustering_utils import create_cluster, calculate_centroids, reassign_outliers
+
 import numpy as np
 import json 
 import random
 import math
+import pandas as pd
+from geopy.distance import geodesic
 
 
 app = FastAPI()
@@ -80,7 +84,7 @@ def build_clustering_response(labels, colors, data, clf):
     } 
 
 @app.post("/cluster/clusters")
-async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
+async def perform_clustering_by_clusters(request: ClusteringRequestClusters)-> ClusteringResponseWorkingHours:
     """
     Performs clustering based on the specified number of clusters.
 
@@ -151,7 +155,7 @@ async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
     return response
 
 @app.post("/cluster/outlets")
-async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
+async def perform_clustering_by_outlets(request: ClusteringRequestOutlets)-> ClusteringResponseWorkingHours:
     """
     Performs clustering based on the specified number of outlets.
 
@@ -220,6 +224,182 @@ async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
 
     response = build_clustering_response(labels, colors, request.data, clf)
     return response 
+
+@app.post("/cluster/working_hours")
+async def perform_clustering_by_working_hours(request: ClusteringRequestWorkingHours) -> ClusteringResponseWorkingHours:
+    """
+    Clusters outlets based on working hours using a greedy algorithm.
+
+    **Parameters:**
+
+    * **request (ClusteringRequestWorkingHours):** The input request containing:
+        * **data (list[DataPoint]):**  A list of data points with the following fields:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+            * **working_hours (int):** The working hours in minutes.
+        * **n_outlets (int):**  The desired number of outlet.
+            - n_hours: The maximum allowed total working hours in a cluster.
+
+    **Returns:**
+
+    * **dict:**  A dictionary containing the clustering results:
+        * **data (list):**  A list of data points with their assigned cluster information:
+            * **id_outlet (int):**  The ID of the outlet.
+            * **latitude (float):**  The latitude of the outlet.
+            * **longitude (float):** The longitude of the outlet.
+            * **cluster (int):**  The cluster ID assigned to the data point.
+            * **color (str):**  A color representing the cluster.
+        * **cluster_definitions (list):** A list of cluster definitions:
+            * **cluster (int):**  The cluster ID.
+            * **color (str):**  A color representing the cluster.
+            * **center (list):** The coordinates of the cluster's center.
+
+    **Raises:**
+        HTTPException: If the input data is invalid (e.g., no data points or invalid working hours).
+
+    ```
+    {
+        "data": [
+        {
+            "id_outlet": 1,
+            "latitude": -6.2345,
+            "longitude": 106.876,
+            "working_hours": 8
+        },
+        {
+            "id_outlet": 2,
+            "latitude": -6.1234,
+            "longitude": 106.987,
+            "working_hours": 10
+        },
+        {
+            "id_outlet": 3,
+            "latitude": -6.3210,
+            "longitude": 106.789,
+            "working_hours": 12
+        },
+        {
+            "id_outlet": 4,
+            "latitude": -6.2876,
+            "longitude": 106.823,
+            "working_hours": 6
+        }],
+        "n_hours": 15
+    }
+    ```
+
+    ```
+    {
+    "status": "success",
+    "data": [
+        {
+            "id_outlet": 1,
+            "latitude": -6.2345,
+            "longitude": 106.876,
+            "cluster": 0,
+            "color": "#FF5733"
+        },
+        {
+            "id_outlet": 2,
+            "latitude": -6.1234,
+            "longitude": 106.987,
+            "cluster": 1,
+            "color": "#3498DB"
+        },
+        {
+            "id_outlet": 3,
+            "latitude": -6.3210,
+            "longitude": 106.789,
+            "cluster": 0,
+            "color": "#FF5733"
+        },
+        {
+            "id_outlet": 4,
+            "latitude": -6.2876,
+            "longitude": 106.823,
+            "cluster": 1,
+            "color": "#3498DB"
+        }
+    ],
+    "cluster_definitions": [
+        {
+            "cluster": 0,
+            "color": "#FF5733",
+            "center": [-6.27775, 106.8325]
+        },
+        {
+            "cluster": 1,
+            "color": "#3498DB",
+            "center": [-6.2055, 106.900]
+        }
+        ]
+    }
+
+    ```
+    """
+    outlets_df = pd.DataFrame([d.dict() for d in request.data])
+    outlets_df = outlets_df.sort_values(by=['latitude', 'longitude']).reset_index(drop=True)
+
+    # Extract necessary data
+    outlets_df['assigned'] = False
+    clusters = []
+
+    # Create clusters iteratively
+    max_time = request.n_hours  # Set maximum time for a cluster in minutes
+    unassigned_outlets = outlets_df[~outlets_df['assigned']]
+
+    while not unassigned_outlets.empty:
+        start_outlet = unassigned_outlets.iloc[0]
+        outlets_df.loc[outlets_df['id_outlet'] == start_outlet['id_outlet'], 'assigned'] = True
+        cluster = create_cluster(outlets_df,start_outlet, max_time)
+        clusters.append(cluster)
+        unassigned_outlets = outlets_df[~outlets_df['assigned']]
+
+    # Assign cluster IDs
+    for cluster_id, cluster in enumerate(clusters):
+        outlets_df.loc[outlets_df['id_outlet'].isin(cluster), 'cluster'] = cluster_id
+
+    # Calculate initial centroids
+    centroids = calculate_centroids(outlets_df)
+
+    # Reassign outliers
+    adjusted_df = reassign_outliers(outlets_df.copy(), centroids)
+    outlets_df = adjusted_df.copy()
+
+    labels = adjusted_df['cluster'].values  # Update labels after outlier reassignment
+    colors = generate_colors(len(centroids))
+
+    # Create cluster definitions with color
+    cluster_definitions = []
+    for cluster_id in outlets_df['cluster'].unique():
+        if cluster_id != -1:
+            color = colors[int(cluster_id)]  # Get the color for this cluster
+            centroid = centroids[cluster_id]
+            cluster_definitions.append({
+                'cluster': int(cluster_id),
+                'color': color,
+                'center': [centroid['latitude'], centroid['longitude']]
+            })
+
+    # Prepare response data
+    response_data = []
+    for i, row in adjusted_df.iterrows():
+        response_data.append(
+            ClusterData(
+                id_outlet=row['id_outlet'],
+                latitude=row['latitude'],
+                longitude=row['longitude'],
+                cluster=row['cluster'],
+                color=colors[int(row['cluster'])]
+            )
+        )
+
+    return ClusteringResponseWorkingHours(
+        status="success",
+        data=response_data,
+        cluster_definitions=cluster_definitions
+    )
 
 @app.get("/sample_output")
 async def get_sample_output():
