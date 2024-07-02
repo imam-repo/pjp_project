@@ -84,7 +84,7 @@ def build_clustering_response(labels, colors, data, clf):
     } 
 
 @app.post("/cluster/clusters")
-async def perform_clustering_by_clusters(request: ClusteringRequestClusters)-> ClusteringResponseWorkingHours:
+async def perform_clustering_by_clusters(request: ClusteringRequestClusters):
     """
     Performs clustering based on the specified number of clusters.
 
@@ -155,7 +155,7 @@ async def perform_clustering_by_clusters(request: ClusteringRequestClusters)-> C
     return response
 
 @app.post("/cluster/outlets")
-async def perform_clustering_by_outlets(request: ClusteringRequestOutlets)-> ClusteringResponseWorkingHours:
+async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
     """
     Performs clustering based on the specified number of outlets.
 
