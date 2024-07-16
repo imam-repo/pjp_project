@@ -1,7 +1,7 @@
 from geopy.distance import geodesic
 
 # Function to calculate total visit duration for a cluster
-def calculate_total_time(outlets_df, cluster):
+def calculate_total_time(cluster):
     return sum(outlets_df.loc[outlets_df['id_outlet'].isin(cluster), 'working_hours'])
 
 # Function to find the nearest outlet not yet assigned
@@ -53,7 +53,9 @@ def reassign_outliers(df, centroids, max_distance=5000):  # Max distance in mete
                 nearest_distance = float('inf')
                 for cluster_id, centroid_coords in centroids.items():
                     distance = geodesic((row['latitude'], row['longitude']), (centroid_coords['latitude'], centroid_coords['longitude'])).meters
+                    
                     if distance < nearest_distance and calculate_total_time(df[df['cluster'] == cluster_id]['id_outlet'].tolist()) + row['working_hours'] <= max_time:
+                    #if distance < nearest_distance and df[df['cluster'] == cluster_id]['working_hours'].sum() + row['working_hours'] <= max_time:
                         nearest_distance = distance
                         nearest_cluster = cluster_id
                 

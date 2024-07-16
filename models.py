@@ -10,7 +10,7 @@ class DataPoint(BaseModel):
     id_outlet: int
     latitude: float
     longitude: float
-    working_hours: int
+    working_hours: float
 
     # Add validators for latitude and longitude
     @validator('latitude')
@@ -65,7 +65,7 @@ class ClusteringRequestWorkingHours(BaseModel):
     Represents a clustering request based on working hours.
     """ 
     data: list[DataPoint] 
-    n_hours: PositiveInt
+    n_hours: float
 
 class ClusterData(BaseModel):  
     id_outlet: int
