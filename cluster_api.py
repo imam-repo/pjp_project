@@ -217,7 +217,7 @@ async def perform_clustering_by_outlets(request: ClusteringRequestOutlets):
     X, total_data = prepare_clustering_data(request.data)
     size_min = request.n_outlets
     size_max = total_data
-    n_clusters = math.ceil(total_data / request.n_outlets)
+    n_clusters = math.floor(total_data / request.n_outlets)
 
     labels, clf = perform_clustering(X, total_data, n_clusters, size_min, size_max)
     colors = generate_colors(n_clusters)
